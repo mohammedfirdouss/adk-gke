@@ -31,7 +31,7 @@ greeter
 - `gcloud` CLI authenticated (`gcloud auth login`)
 - `kubectl` installed
 - Python 3.11+
-- A `.env` file in `adk_multiagent_systems/` with:
+- A `.env` file in `investment_analyst/` with:
 
 ```env
 MODEL=gemini-2.5-flash
@@ -46,14 +46,14 @@ GOOGLE_CLOUD_LOCATION=us-central1
 ### 1. Install dependencies
 
 ```bash
-uv pip install -r adk_multiagent_systems/requirements.txt
+uv pip install -r investment_analyst/requirements.txt
 ```
 
 ### 2. Run locally with ADK
 
 ```bash
 cd adk_multiagent_systems
-adk web workflow_agents
+adk web agents
 ```
 
 ---
@@ -62,8 +62,8 @@ adk web workflow_agents
 
 ```
 adk-gke/
-├── adk_multiagent_systems/
-│   ├── workflow_agents/
+├── investment_analyst/
+│   ├── agents/
 │   │   ├── agent.py          # all agent definitions and orchestration
 │   │   └── __init__.py
 │   ├── callback_logging.py   # Cloud Logging hooks for observability

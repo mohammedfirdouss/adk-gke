@@ -19,7 +19,7 @@ spec:
       containers:
       - name: investment-analyst
         imagePullPolicy: Always
-        image: ${GOOGLE_CLOUD_LOCATION}-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/adk-repo/investment-analyst:latest
+        image: ${GOOGLE_CLOUD_LOCATION}-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/investment-repo/investment-analyst:latest
         resources:
           limits:
             memory: "1Gi"
