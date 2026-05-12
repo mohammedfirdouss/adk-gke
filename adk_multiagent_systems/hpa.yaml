@@ -1,0 +1,16 @@
+# Configures the HorizontalPodAutoscaler (HPA) to automatically scale
+# the number of running agent pods up or down based on CPU utilization
+# to handle varying traffic loads.
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: investment-analyst-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: investment-analyst
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
