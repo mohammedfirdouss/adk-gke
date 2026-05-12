@@ -46,7 +46,7 @@ GOOGLE_CLOUD_LOCATION=us-central1
 ### 1. Install dependencies
 
 ```bash
-pip install -r adk_multiagent_systems/requirements.txt
+uv pip install -r adk_multiagent_systems/requirements.txt
 ```
 
 ### 2. Run locally with ADK

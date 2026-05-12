@@ -3,3 +3,4 @@ wikipedia==1.4.0
 google-adk==1.27.5
 fastapi==0.135.2
 uvicorn==0.42.0
+yfinance==0.2.54
