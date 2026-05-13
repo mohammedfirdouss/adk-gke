@@ -13,7 +13,6 @@ from callback_logging import log_model_response, log_query_to_model
 from dotenv import load_dotenv
 from google.adk import Agent
 from google.adk.agents import LoopAgent, ParallelAgent, SequentialAgent
-from google.adk.tools import google_search
 from google.adk.tools.langchain_tool import LangchainTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
@@ -109,9 +108,8 @@ researcher = Agent(
     - If both are empty, gather foundational facts about the company or asset in
       the PROMPT: its history, business model, key products, leadership, and
       competitive landscape.
-    - Use all three research tools together for a complete picture:
+    - Use both research tools together for a complete picture:
         * Wikipedia — company history, business model, background
-        * google_search — recent news, events, analyst commentary
         * YahooFinanceNewsTool — latest financial news headlines
     - Use the 'append_to_state' tool to save your findings to the field 'research'.
     - Summarize the key facts you found.
@@ -120,7 +118,6 @@ researcher = Agent(
     tools=[
         LangchainTool(tool=WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())),
         LangchainTool(tool=YahooFinanceNewsTool()),
-        google_search,
         append_to_state,
     ],
 )
