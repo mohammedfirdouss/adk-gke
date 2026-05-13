@@ -52,24 +52,31 @@ def get_stock_fundamentals(tool_context: ToolContext, ticker: str) -> dict:
     Returns:
         dict: market cap, P/E ratio, revenue, profit margin, 52-week range
     """
-    try:
-        info = yf.Ticker(ticker).info
-        if not info or info.get("trailingPE") is None and info.get("marketCap") is None:
-            return {"error": f"No data found for ticker '{ticker}'. Check the symbol is correct."}
-        return {
-            "market_cap": info.get("marketCap"),
-            "pe_ratio": info.get("trailingPE"),
-            "forward_pe": info.get("forwardPE"),
-            "revenue": info.get("totalRevenue"),
-            "profit_margin": info.get("profitMargins"),
-            "52w_high": info.get("fiftyTwoWeekHigh"),
-            "52w_low": info.get("fiftyTwoWeekLow"),
-            "analyst_target_price": info.get("targetMeanPrice"),
-            "recommendation": info.get("recommendationKey"),
-        }
-    except Exception as e:
-        logging.error(f"[get_stock_fundamentals] Failed for ticker '{ticker}': {e}")
-        return {"error": f"Failed to fetch data for '{ticker}': {str(e)}"}
+    import time
+    for attempt in range(3):
+        try:
+            info = yf.Ticker(ticker).info
+            if not info or info.get("trailingPE") is None and info.get("marketCap") is None:
+                return {"error": f"No data found for ticker '{ticker}'. Check the symbol is correct."}
+            return {
+                "market_cap": info.get("marketCap"),
+                "pe_ratio": info.get("trailingPE"),
+                "forward_pe": info.get("forwardPE"),
+                "revenue": info.get("totalRevenue"),
+                "profit_margin": info.get("profitMargins"),
+                "52w_high": info.get("fiftyTwoWeekHigh"),
+                "52w_low": info.get("fiftyTwoWeekLow"),
+                "analyst_target_price": info.get("targetMeanPrice"),
+                "recommendation": info.get("recommendationKey"),
+            }
+        except Exception as e:
+            if "Too Many Requests" in str(e) and attempt < 2:
+                wait = 5 * (attempt + 1)
+                logging.warning(f"[get_stock_fundamentals] Rate limited, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                logging.error(f"[get_stock_fundamentals] Failed for ticker '{ticker}': {e}")
+                return {"error": f"Failed to fetch data for '{ticker}': {str(e)}"}
 
 
 def write_file(
