@@ -20,6 +20,10 @@ investment_analyst/
 └── requirements.txt
 ```
 
+## MCP
+
+The `gcloud` MCP server is configured in `~/.claude/settings.json` using `@google-cloud/gcloud-mcp`. It uses your existing `gcloud auth` session — no extra setup. Restart Claude Code to activate after any config changes.
+
 ## Environment
 
 Set before any gcloud/kubectl commands (see `set_env.txt` for values):
