@@ -8,7 +8,6 @@ import logging
 import os
 
 import yfinance as yf
-import google.cloud.logging
 from callback_logging import log_model_response, log_query_to_model
 from dotenv import load_dotenv
 from google.adk import Agent
@@ -17,11 +16,7 @@ from google.adk.tools.langchain_tool import LangchainTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from langchain_community.tools import WikipediaQueryRun
-from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 from langchain_community.utilities import WikipediaAPIWrapper
-
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
 
 load_dotenv()
 
@@ -57,18 +52,24 @@ def get_stock_fundamentals(tool_context: ToolContext, ticker: str) -> dict:
     Returns:
         dict: market cap, P/E ratio, revenue, profit margin, 52-week range
     """
-    info = yf.Ticker(ticker).info
-    return {
-        "market_cap": info.get("marketCap"),
-        "pe_ratio": info.get("trailingPE"),
-        "forward_pe": info.get("forwardPE"),
-        "revenue": info.get("totalRevenue"),
-        "profit_margin": info.get("profitMargins"),
-        "52w_high": info.get("fiftyTwoWeekHigh"),
-        "52w_low": info.get("fiftyTwoWeekLow"),
-        "analyst_target_price": info.get("targetMeanPrice"),
-        "recommendation": info.get("recommendationKey"),
-    }
+    try:
+        info = yf.Ticker(ticker).info
+        if not info or info.get("trailingPE") is None and info.get("marketCap") is None:
+            return {"error": f"No data found for ticker '{ticker}'. Check the symbol is correct."}
+        return {
+            "market_cap": info.get("marketCap"),
+            "pe_ratio": info.get("trailingPE"),
+            "forward_pe": info.get("forwardPE"),
+            "revenue": info.get("totalRevenue"),
+            "profit_margin": info.get("profitMargins"),
+            "52w_high": info.get("fiftyTwoWeekHigh"),
+            "52w_low": info.get("fiftyTwoWeekLow"),
+            "analyst_target_price": info.get("targetMeanPrice"),
+            "recommendation": info.get("recommendationKey"),
+        }
+    except Exception as e:
+        logging.error(f"[get_stock_fundamentals] Failed for ticker '{ticker}': {e}")
+        return {"error": f"Failed to fetch data for '{ticker}': {str(e)}"}
 
 
 def write_file(
@@ -77,11 +78,16 @@ def write_file(
     filename: str,
     content: str,
 ) -> dict[str, str]:
-    target_path = os.path.join(directory, filename)
-    os.makedirs(os.path.dirname(target_path), exist_ok=True)
-    with open(target_path, "w") as f:
-        f.write(content)
-    return {"status": "success"}
+    try:
+        target_path = os.path.join(directory, filename)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        with open(target_path, "w") as f:
+            f.write(content)
+        logging.info(f"[Report saved] {target_path}")
+        return {"status": "success", "path": target_path}
+    except Exception as e:
+        logging.error(f"[write_file] Failed to write {filename}: {e}")
+        return {"status": "error", "error": str(e)}
 
 
 # Agents
@@ -90,6 +96,8 @@ researcher = Agent(
     name="researcher",
     model=model_name,
     description="Researches a company or stock using Wikipedia.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     PROMPT:
     { PROMPT? }
@@ -105,19 +113,14 @@ researcher = Agent(
       address the gaps or concerns raised.
     - If there is an INVESTMENT_THESIS already, use your Wikipedia tool to find
       additional supporting or challenging facts.
-    - If both are empty, gather foundational facts about the company or asset in
-      the PROMPT: its history, business model, key products, leadership, and
-      competitive landscape.
-    - Use both research tools together for a complete picture:
-        * Wikipedia — company history, business model, background
-        * YahooFinanceNewsTool — latest financial news headlines
+    - If both are empty, use Wikipedia to gather foundational facts about the company
+      in the PROMPT: history, business model, key products, leadership, competitive landscape.
     - Use the 'append_to_state' tool to save your findings to the field 'research'.
     - Summarize the key facts you found.
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0),
     tools=[
         LangchainTool(tool=WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())),
-        LangchainTool(tool=YahooFinanceNewsTool()),
         append_to_state,
     ],
 )
@@ -126,6 +129,8 @@ analyst = Agent(
     name="analyst",
     model=model_name,
     description="Writes and refines an investment thesis based on research.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     PROMPT:
     { PROMPT? }
@@ -162,6 +167,8 @@ devils_advocate = Agent(
     name="devils_advocate",
     model=model_name,
     description="Critiques the investment thesis and decides whether to iterate or escalate.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     INVESTMENT_THESIS:
     { INVESTMENT_THESIS? }
@@ -186,6 +193,8 @@ bull_case_writer = Agent(
     name="bull_case_writer",
     model=model_name,
     description="Writes the optimistic bull case for the investment.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     INVESTMENT_THESIS:
     { INVESTMENT_THESIS? }
@@ -208,6 +217,8 @@ bear_case_writer = Agent(
     name="bear_case_writer",
     model=model_name,
     description="Writes the pessimistic bear case for the investment.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     INVESTMENT_THESIS:
     { INVESTMENT_THESIS? }
@@ -230,6 +241,8 @@ report_writer = Agent(
     name="report_writer",
     model=model_name,
     description="Aggregates all research and analysis into a final investment report file.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     PROMPT:
     { PROMPT? }
@@ -291,6 +304,8 @@ root_agent = Agent(
     name="greeter",
     model=model_name,
     description="Welcomes the user and kicks off the investment research workflow.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
     instruction="""
     - Greet the user and let them know you are an investment research assistant that
       will produce a full research report on any publicly known company or asset.
