@@ -4,8 +4,6 @@ A multi-agent investment research assistant built with [Google Agent Development
 
 Given a company or stock, the agent team researches it on Wikipedia, stress-tests an investment thesis through an analyst/critic loop, then produces parallel bull and bear cases before writing a final report to disk.
 
----
-
 ## Agent Architecture
 
 ```
@@ -23,8 +21,6 @@ greeter
 
 **State keys:** `PROMPT` → `research` → `INVESTMENT_THESIS` ↔ `CRITICAL_FEEDBACK` (loop) → `BULL_CASE` + `BEAR_CASE` → file output saved to `investment_reports/`
 
----
-
 ## Prerequisites
 
 - Google Cloud project with billing enabled
@@ -38,8 +34,6 @@ MODEL=gemini-2.5-flash
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
 ```
-
----
 
 ## Setup
 
@@ -56,8 +50,6 @@ cd adk_multiagent_systems
 adk web agents
 ```
 
----
-
 ## Project Structure
 
 ```
@@ -70,8 +62,6 @@ adk-gke/
 │   └── requirements.txt
 └── README.md
 ```
-
----
 
 ## Key Dependencies
 
