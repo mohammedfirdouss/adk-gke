@@ -50,6 +50,10 @@ cd adk_multiagent_systems
 adk web agents
 ```
 
+## Screenshot walkthrough
+
+For a visual walkthrough of the cluster setup, deployment, service exposure, tracing, and observability flow, see [docs/screenshot-walkthrough.md](docs/screenshot-walkthrough.md).
+
 ## Project Structure
 
 ```
